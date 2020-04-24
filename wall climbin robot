@@ -1,0 +1,187 @@
+// Include
+
+#include <Servo.h>
+
+// User Constants
+
+static const long BAUDRATE = 115200;  // Set the baudrate for the serial monitor (default: 115200)
+
+static const int ESC_PIN = 10;     // 1 esc 
+
+static const int ENA = 3;          // 1 motor
+static const int IN1 = 7;          // 2 motor
+static const int IN2 = 8;          // 3 motor
+static const int IN3 = 13;         // 4 motor
+static const int IN4 = 12;         // 5 motor
+static const int ENB = 11;         // 6 motor
+
+static const int LED_G = 6;         // 2 led
+static const int LED_R = 4;         // 3 led
+static const int LED_B = 5;         // 4 led
+
+static const int VOLT_PIN = A0;     // 1 voltmeter
+
+static const int LOW_POS = 700;
+static const int HIGH_POS = 2000;
+
+// Variables
+
+Servo esc;
+
+int value = -1;
+int desiredValue = -1;
+
+long i = 1;
+
+bool color = 1;
+int G = 255;
+int B = 255;
+
+float volt;
+
+//--------------------------------------------------------------------------------------------------------------------------
+
+void setup() {
+  esc.attach(ESC_PIN);   
+  pinMode(VOLT_PIN, INPUT);
+  pinMode(LED_G, OUTPUT);
+  pinMode(LED_R, OUTPUT);
+  pinMode(LED_B, OUTPUT);
+  pinMode(ENA, OUTPUT);
+  pinMode(IN1, OUTPUT);
+  pinMode(IN2, OUTPUT);
+  pinMode(ENB, OUTPUT);
+  pinMode(IN3, OUTPUT);
+  pinMode(IN4, OUTPUT);
+  
+  Serial.begin(BAUDRATE);
+  
+}
+
+//--------------------------------------------------------------------------------------------------------------------------
+
+void loop() {
+  
+  // Volt checken
+  
+  volt = analogRead(VOLT_PIN);
+  if(volt < 480) { //geschat: 13 volt 
+    digitalWrite(LED_R, 1);
+    analogWrite(LED_G, 0);
+    analogWrite(LED_B, 0);
+  }
+  else {
+    digitalWrite(LED_R, 0);
+
+    if(color == 1){ 
+      if(B < 255){
+        B = B+1;
+      }
+      if(G > 0){
+        G = G-1;
+      }
+      analogWrite(LED_G, G);
+      analogWrite(LED_B, B);
+    }
+    
+    else if(color == 0){ 
+      if(G < 255){
+        G = G+1;
+      }
+      if(B > 0){
+        B = B-1;
+      }
+      analogWrite(LED_G, G);
+      analogWrite(LED_B, B);
+    }
+  }
+  
+  // ESC aansturen (700-2100)+ Motor aansturen
+  
+  if(i < 10000){                    //1
+    Stop();
+    esc.writeMicroseconds(701);
+    color = 1;
+  }
+  else if(i > 10000 && i < 12000){  //2    
+    Stop();
+    esc.writeMicroseconds(850);
+    color = 0;
+  } 
+  else if(i > 12000 && i < 15000){  //3
+    Stop();
+    esc.writeMicroseconds(1600);
+    color = 1;
+  } 
+  else if(i > 15000 && i < 17000){  //4
+    TurnR();
+    esc.writeMicroseconds(1600);
+    color = 0;
+  } 
+  else if(i > 17000 && i < 22000){  //5
+    Stop();
+    esc.writeMicroseconds(1600);
+    color = 1;
+  }
+  else if(i > 22000 && i < 23000){  //5
+    Stop();
+    esc.writeMicroseconds(850);
+    color = 0;
+  }
+  else if(i > 23000){    
+    Stop();          
+    esc.writeMicroseconds(700);
+    color = 1;
+  }
+
+  // Time
+  
+  delay(1);
+  if(i < 30000){
+    i++;
+  }
+  
+}
+
+//--------------------------------------------------------------------------------------------------------------------------
+
+void TurnL() {
+  analogWrite(ENA, 255);
+  digitalWrite(IN1, 1);
+  digitalWrite(IN2, 0);
+  digitalWrite(IN3, 0);
+  digitalWrite(IN4, 1);  
+  analogWrite(ENB, 255);
+}
+
+void TurnR() {
+  analogWrite(ENA, 255);
+  digitalWrite(IN1, 0);
+  digitalWrite(IN2, 1);
+  digitalWrite(IN3, 1);
+  digitalWrite(IN4, 0);  
+  analogWrite(ENB, 255);
+}
+
+void Forward() {
+  analogWrite(ENA, 255);
+  digitalWrite(IN1, 0);
+  digitalWrite(IN2, 1);
+  digitalWrite(IN3, 0);
+  digitalWrite(IN4, 1);  
+  analogWrite(ENB, 255);
+}
+
+void Backward() {
+  analogWrite(ENA, 255);
+  digitalWrite(IN1, 1);
+  digitalWrite(IN2, 0);
+  digitalWrite(IN3, 1);
+  digitalWrite(IN4, 0);  
+  analogWrite(ENB, 255);
+}
+
+void Stop() {
+  analogWrite(ENA, 0);
+  analogWrite(ENB, 0);  
+}
